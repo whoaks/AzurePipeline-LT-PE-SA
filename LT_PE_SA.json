@@ -1,0 +1,73 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {},
+    "resources": [
+        {
+            "name"      : "LT-VNet",
+            "type"      : "Microsoft.Resources/deployments",
+            "apiVersion": "2020-10-01",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "relativePath": "artifacts/VNet.json"
+                }
+            }
+        },
+        {
+            "name"      : "LT-Subnet",
+            "type"      : "Microsoft.Resources/deployments",
+            "apiVersion": "2020-10-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments', 'LT-VNet')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "relativePath": "artifacts/Subnet.json"
+                }
+            }
+        },
+        {
+            "name"      : "LT-Storage-Account",
+            "type"      : "Microsoft.Resources/deployments",
+            "apiVersion": "2020-10-01",
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "relativePath": "artifacts/Storage_Account.json"
+                }
+            }
+        },
+        {
+            "name"      : "LT-Private-DNS",
+            "type"      : "Microsoft.Resources/deployments",
+            "apiVersion": "2020-10-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments', 'LT-VNet')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "relativePath": "artifacts/Private_DNS.json"
+                }
+            }
+        },
+        {
+            "name"      : "LT-Private-Endpoint",
+            "type"      : "Microsoft.Resources/deployments",
+            "apiVersion": "2020-10-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments', 'LT-Private-DNS')]",
+                "[resourceId('Microsoft.Resources/deployments', 'LT-Storage-Account')]"
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "templateLink": {
+                    "relativePath": "artifacts/Private_Endpoint.json"
+                }
+            }
+        } 
+    ],
+    "outputs": {}
+}

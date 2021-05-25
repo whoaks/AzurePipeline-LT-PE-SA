@@ -1,0 +1,97 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "PE_Name": {
+            "type"        : "array",
+            "defaultValue": ["pe-storage-blob"]
+        },
+        "PE_Tags": {
+            "type"        : "object",
+            "defaultValue": {
+                "Env": "Testing"
+            }
+        },
+        "PE_Service_Name": {
+            "type"        : "array",
+            "defaultValue": ["pe-storage-blob-connection"]
+        },
+        "PE_SubResource_Name": {
+            "type"        : "array",
+            "defaultValue": ["blob"]
+        },
+        "PE_DNS_Zone_Config_Name": {
+            "type"        : "array",
+            "defaultValue": ["arm-config"]
+        },
+        "VNet_Name": {
+            "type"        : "string",
+            "defaultValue": "VNet"
+        },
+        "Subnet_Name": {
+            "type"        : "string",
+            "defaultValue": "Subnet"
+        },
+        "Storage_Account_Name": {
+            "type"        : "string",
+            "defaultValue": "staccount7384"
+        },
+        "Private_DNS_Name": {
+            "type"        : "array",
+            "defaultValue": ["privatelink.blob.core.windows.net"]
+        }
+    },
+    "resources": [
+        {
+            "name"      : "[parameters('PE_Name')[copyIndex('PECopy')]]",
+            "type"      : "Microsoft.Network/privateEndpoints",
+            "apiVersion": "2020-06-01",
+            "location"  : "[resourceGroup().location]",
+            "tags"      : "[parameters('PE_Tags')]",
+            "properties": {
+                "privateLinkServiceConnections": [
+                    {
+                        "name"      : "[parameters('PE_Service_Name')[copyIndex('PECopy')]]",
+                        "properties": {
+                            "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('Storage_Account_Name'))]",
+                            "groupIds"            : [ "[parameters('PE_SubResource_Name')[copyIndex('PECopy')]]" ]
+                        }
+                    }
+                ],
+                "subnet": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('VNet_Name'), parameters('Subnet_Name'))]"
+                },
+                "customDnsConfigs": []
+            },
+            "copy": {
+                "name" : "PECopy",
+                "count": "[length(parameters('PE_Name'))]",
+                "mode" : "Serial"
+            }
+        },
+        {
+            "type"      : "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+            "apiVersion": "2020-06-01",
+            "name"      : "[concat(parameters('PE_Name')[copyIndex('PECfgCopy')], '/' , 'default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateEndpoints', parameters('PE_Name')[copyIndex('PECfgCopy')])]"
+            ],
+            "properties": {
+                "privateDnsZoneConfigs": [
+                    {
+                        "name"      : "[parameters('PE_DNS_Zone_Config_Name')[copyIndex('PECfgCopy')]]",
+                        "properties": {
+                            "privateDnsZoneId": "[resourceId('Microsoft.Network/privateDnsZones', parameters('Private_DNS_Name')[copyIndex('PECfgCopy')])]"
+                        }
+                    }
+                ]
+            },
+            "copy": {
+                "name" : "PECfgCopy",
+                "count": "[length(parameters('PE_DNS_Zone_Config_Name'))]",
+                "mode" : "Serial"
+            }
+        }
+    ],
+    "outputs": {}
+}
